@@ -29,6 +29,7 @@ export default class SkidCanvas implements Entity {
     if (hash in this.chunks) {
       chunk = this.chunks[hash];
     } else {
+      // A chunk doesn't exist for this position, so create one
       const canvas = document.createElement('canvas');
       canvas.width = canvas.height = this.chunkSize;
 
@@ -83,6 +84,8 @@ export default class SkidCanvas implements Entity {
     const bounds = camera.bounds;
     const start = this.chunkPosition(vec.sub(vec(bounds.left, bounds.top), vec(1)));
     const end = this.chunkPosition(vec.add(vec(bounds.right, bounds.bottom), vec(1)));
+
+    // Draw all chunks currently within the camera bounds
     for (let x = start.x; x <= end.x; x++) {
       for (let y = start.y; y <= end.y; y++) {
         const hash = this.hashPosition(vec(x, y));

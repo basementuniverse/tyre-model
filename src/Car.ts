@@ -1,4 +1,5 @@
 import Game from './Game';
+import Debug from './Debug';
 import Input from './Input';
 import SkidCanvas from './SkidCanvas';
 import Entity from './Entity';
@@ -7,7 +8,6 @@ import Wheel from './Wheel';
 import { vec } from './vec';
 import { clamp, wrapDirection } from './utilities';
 import * as config from './config.json';
-import Debug from './Debug';
 
 enum WheelPosition {
   FrontLeft = 0,
@@ -92,9 +92,11 @@ export default class Car implements Entity, HasWheels {
   }
 
   public handleInput(): void {
+    // TODO improve brake/reverse handling
+    
     this.handbrake = Input.keyDown(config.controls.handbrake as any);
 
-    // Throttle / break / reverse
+    // Throttle / brake / reverse
     this.throttle = Input.keyDown(config.controls.throttle as any);
     this.brake = Input.keyDown(config.controls.brake as any);
 
@@ -179,6 +181,7 @@ export default class Car implements Entity, HasWheels {
     this.position = position;
     this.direction = direction;
 
+    // Debug output
     Debug.value('position', vec.str(this.position));
     Debug.value('direction', this.direction);
     Debug.value('speed', this.speed);

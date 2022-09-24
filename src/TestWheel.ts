@@ -40,11 +40,10 @@ export default class TestWheel implements Entity, HasWheels {
   }
 
   public handleInput(): void {
-    this.handbrake = Input.keyDown(config.controls.handbrake as any);
-
-    // Throttle / break / reverse
+    // Throttle / brake / handbrake
     this.throttle = Input.keyDown(config.controls.throttle as any);
     this.brake = Input.keyDown(config.controls.brake as any);
+    this.handbrake = Input.keyDown(config.controls.handbrake as any);
 
     // Steering
     if (Input.keyDown(config.controls.left as any)) {

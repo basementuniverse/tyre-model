@@ -1,5 +1,3 @@
-import { vec } from './vec';
-
 export function clamp(a: number, min: number = 0, max: number = 1): number {
   return a < min ? min : (a > max ? max : a);
 }
@@ -19,11 +17,7 @@ export function wrapDirection(d: number): number {
   return d;
 }
 
-export function linearTransform(
-  x: number,
-  m: number,
-  c: number
-): number {
+export function linearTransform(x: number, m: number, c: number): number {
   return x * m + c;
 }
 

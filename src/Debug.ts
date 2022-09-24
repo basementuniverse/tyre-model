@@ -74,9 +74,6 @@ export default class Debug {
     this.markers = new Map<string, DebugMarker>();
   }
 
-  /**
-   * Initialise the debug renderer for displaying values and markers
-   */
   public static initialise(options: Partial<DebugOptions> = {}): void {
     Debug.instance = new Debug(options);
   }
@@ -88,9 +85,6 @@ export default class Debug {
     return Debug.instance;
   }
 
-  /**
-   * Show a debug value
-   */
   public static value(
     label: string,
     value: string | number,
@@ -104,9 +98,6 @@ export default class Debug {
     ));
   }
 
-  /**
-   * Show a marker in world or screen space
-   */
   public static marker(
     label: string,
     value: string | number,

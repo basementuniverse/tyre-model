@@ -1,13 +1,13 @@
 import Game from './Game';
 import Entity from './Entity';
+import { WheelStats } from './HasWheels';
+import SkidCanvas from './SkidCanvas';
 import { vec } from './vec';
 import {
   clamp,
   linearTransform,
   smoothstep,
 } from './utilities';
-import SkidCanvas from './SkidCanvas';
-import { WheelStats } from './HasWheels';
 
 export default class Wheel implements Entity {
   public position: vec;
@@ -74,8 +74,7 @@ export default class Wheel implements Entity {
       Game.settings.tyreSlipOffset
     ));
 
-    // Calculate lateral drag (the amount of drag at a normal to the tyre's
-    // direction)
+    // Calculate lateral drag (the amount of drag at a normal to the tyre's direction)
     const lateralDrag = smoothstep(
       Game.settings.tyreLateralDragMin,
       Game.settings.tyreLateralDragMax,
@@ -88,15 +87,17 @@ export default class Wheel implements Entity {
     // When the handbrake is applied, this should be the same as lateral drag
     const longitudinalDrag = handbrake ? lateralDrag : Game.settings.tyreLongitudinalDrag;
 
+    // TODO maybe pass lateral drag through a function that simulates coefficient of friction?
+
     // Calculate a velocity vector pointing in the tyre's direction so we can apply
-    // longitudinal drag (facing in the direction of the tyre) and lateral drag
+    // longitudinal and lateral drag
     const rv = vec.rot(vec.add(this.velocity, dv), -this.direction);
     rv.x *= 1 - longitudinalDrag;
     rv.y *= 1 - lateralDrag;
     this.velocity = vec.rot(rv, this.direction);
     this.speed = vec.len(this.velocity);
 
-    // If velocity gets small enough, snap to 0
+    // If velocity gets small enough, stop to prevent any floating-point instability
     if (this.speed < 1) {
       this.velocity = vec();
     }
@@ -119,7 +120,7 @@ export default class Wheel implements Entity {
     );
     context.restore();
 
-    // Draw skid mark
+    // Draw skid-mark
     if (this.slipCoefficient > 0) {
       skidCanvas.skid(
         this.position,
