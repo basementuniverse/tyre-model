@@ -1,10 +1,13 @@
 import Game from './Game';
 import Input from './Input';
+import SkidCanvas from './SkidCanvas';
 import Entity from './Entity';
+import HasWheels, { WheelStats } from './HasWheels';
 import Wheel from './Wheel';
 import { vec } from './vec';
 import { clamp, wrapDirection } from './utilities';
 import * as config from './config.json';
+import Debug from './Debug';
 
 enum WheelPosition {
   FrontLeft = 0,
@@ -13,9 +16,7 @@ enum WheelPosition {
   BackRight = 3,
 }
 
-export default class Car implements Entity {
-  private static readonly steeringSnap = 0.01;
-
+export default class Car implements Entity, HasWheels {
   public position: vec;
   public direction: number;
   public speed: number = 0;
@@ -86,6 +87,10 @@ export default class Car implements Entity {
     return vec.add(this.position, vec.rot(offset, this.direction));
   }
 
+  public getWheelStats(): WheelStats[] {
+    return this.wheels.map(wheel => wheel.stats);
+  }
+
   public handleInput(): void {
     this.handbrake = Input.keyDown(config.controls.handbrake as any);
 
@@ -105,15 +110,15 @@ export default class Car implements Entity {
       // If no steering keys are pressed, gradually reset steering
       this.steering += (this.steering < 0 ? 1 : -1) *
         Game.settings.carSteeringResetAmount;
+
+      // Snap steering back to zero when it gets small enough
+      if (Math.abs(this.steering) <= Game.settings.carSteeringResetAmount) {
+        this.steering = 0;
+      }
     }
 
     // Clamp steering
     this.steering = clamp(this.steering, -1, 1);
-
-    // Snap steering back to zero when it gets small enough
-    if (Math.abs(this.steering) < Car.steeringSnap) {
-      this.steering = 0;
-    }
   }
 
   public update(dt: number): void {
@@ -128,24 +133,28 @@ export default class Car implements Entity {
       dt,
       Game.settings.frontWheelDrive ? drive : 0,
       brake,
+      this.handbrake,
       steering
     );
     this.wheels[WheelPosition.FrontRight].update(
       dt,
       Game.settings.frontWheelDrive ? drive : 0,
       brake,
+      this.handbrake,
       steering
     );
     this.wheels[WheelPosition.BackLeft].update(
       dt,
       Game.settings.rearWheelDrive ? drive : 0,
       brake,
+      this.handbrake,
       this.direction
     );
     this.wheels[WheelPosition.BackRight].update(
       dt,
       Game.settings.rearWheelDrive ? drive : 0,
       brake,
+      this.handbrake,
       this.direction
     );
 
@@ -170,6 +179,43 @@ export default class Car implements Entity {
     this.position = position;
     this.direction = direction;
 
+    Debug.value('position', vec.str(this.position));
+    Debug.value('direction', this.direction);
+    Debug.value('speed', this.speed);
+    Debug.value('steering', this.steering);
+    Debug.value(
+      'throttle',
+      'throttle',
+      {
+        showLabel: false,
+        foregroundColour: this.throttle ? 'white' : 'rgba(255, 255, 255, 0.2)',
+      }
+    );
+    Debug.value(
+      'brake',
+      'brake',
+      {
+        showLabel: false,
+        foregroundColour: this.brake ? 'white' : 'rgba(255, 255, 255, 0.2)',
+      }
+    );
+    Debug.value(
+      'reverse',
+      'reverse',
+      {
+        showLabel: false,
+        foregroundColour: this.reverse ? 'white' : 'rgba(255, 255, 255, 0.2)',
+      }
+    );
+    Debug.value(
+      'handbrake',
+      'handbrake',
+      {
+        showLabel: false,
+        foregroundColour: this.handbrake ? 'white' : 'rgba(255, 255, 255, 0.2)',
+      }
+    );
+
     // Constrain wheels
     steering = wrapDirection(this.direction + (
       this.steering * Game.settings.carSteeringAngleMax
@@ -192,10 +238,7 @@ export default class Car implements Entity {
     this.wheels[WheelPosition.BackRight].direction = this.direction;
   }
 
-  public draw(
-    context: CanvasRenderingContext2D,
-    skidContext: CanvasRenderingContext2D
-  ): void {
+  public draw(context: CanvasRenderingContext2D, skidCanvas: SkidCanvas): void {
     context.save();
     context.translate(this.position.x, this.position.y);
     context.rotate(this.direction);
@@ -210,7 +253,7 @@ export default class Car implements Entity {
     context.restore();
 
     for (const wheel of this.wheels) {
-      wheel.draw(context);
+      wheel.draw(context, skidCanvas);
     }
   }
 }

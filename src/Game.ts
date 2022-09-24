@@ -1,14 +1,20 @@
 import * as dat from 'dat.gui';
 import Debug from './Debug';
 import Input from './Input';
+import Camera from './Camera';
+import Background from './Background';
+import SkidCanvas from './SkidCanvas';
+import Graph from './Graph';
 import Car from './Car';
+import TestWheel from './TestWheel';
 import { vec } from './vec';
+import { debounce } from './utilities';
 import * as constants from './constants';
 import * as config from './config.json';
 
 export default class Game {
-  private readonly initialCarPosition = vec(300, 300);
-  private readonly initialCarDirection = 0;
+  private readonly initialCarPosition: vec = vec();
+  private readonly initialCarDirection: number = 0;
 
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
@@ -18,35 +24,41 @@ export default class Game {
   private frameCount: number = 0;
 
   public static screen: vec;
-
-  private skidCanvas: HTMLCanvasElement;
-  private skidContext: CanvasRenderingContext2D;
+  private camera: Camera;
+  private background: Background;
+  private skidCanvas: SkidCanvas;
+  private graph: Graph;
 
   private car: Car;
+  private testWheel: TestWheel;
 
   public static settings: Record<string, any> = {
+    reset: () => { },
+    testWheel: false,
+    drawSlipGraph: true,
     carWidth: 30,
     carLength: 50,
     frontWheelsOffset: 17,
     backWheelsOffset: -17,
     rightWheelsOffset: 14,
     leftWheelsOffset: -14,
-    carEnginePower: 35,
-    carEngineReversePower: 15,
+    carEnginePower: 80,
+    carEngineReversePower: 30,
     carBrakePower: 50,
     carSteeringAmount: 0.02,
-    carSteeringCurve: 0.12,
+    carSteeringCurve: 0.06,
     carSteeringResetAmount: 0.08,
-    carMaxSpeed: 250,
+    carMaxSpeed: 170,
     carSteeringAngleMax: 0.7,
     wheelWidth: 4,
     wheelLength: 12,
     tyreLongitudinalDrag: 0.001,
-    tyreLateralDrag: 0.024,
-    tyreSpeedOffset: 0.2,
-    tyreSpeedCoefficient: 0.56,
-    tyreSlipOffset: 0.52,
-    tyreSlipCoefficient: 1,
+    tyreLateralDragMin: 0.028,
+    tyreLateralDragMax: 0.193,
+    tyreSpeedOffset: -0.121,
+    tyreSpeedCoefficient: 1.6,
+    tyreSlipOffset: 0.76,
+    tyreSlipCoefficient: 0.8,
     frontWheelDrive: true,
     rearWheelDrive: true,
   };
@@ -68,15 +80,6 @@ export default class Game {
       throw new Error("Couldn't get a 2d context.");
     }
 
-    // Create the skid canvas and context
-    this.skidCanvas = document.createElement('canvas');
-    const skidContext = this.skidCanvas.getContext('2d');
-    if (skidContext !== null) {
-      this.skidContext = skidContext;
-    } else {
-      throw new Error("Couldn't get a 2d context for the skid canvas.");
-    }
-
     // Handle resize
     window.addEventListener('resize', this.resize.bind(this), false);
     this.resize();
@@ -90,15 +93,34 @@ export default class Game {
   public initialise(): void {
     Input.initialise();
 
-    this.car = new Car(
-      vec.clone(this.initialCarPosition),
-      this.initialCarDirection
-    );
+    this.camera = new Camera(this.initialCarPosition);
+    this.background = new Background();
+    this.skidCanvas = new SkidCanvas();
+    this.graph = new Graph();
+
+    // Reset car position and direction
+    const reset = () => {
+      this.car = new Car(
+        this.initialCarPosition,
+        this.initialCarDirection
+      );
+
+      this.testWheel = new TestWheel(
+        this.initialCarPosition,
+        this.initialCarDirection
+      );
+    };
+    Game.settings.reset = reset;
+    reset();
 
     this.lastFrameTime = this.lastFrameCountTime = performance.now();
     this.loop();
 
-    const gui = new dat.GUI();
+    // Setup GUI
+    const gui = new dat.GUI({ width: 350 });
+    gui.add(Game.settings, 'reset');
+    gui.add(Game.settings, 'testWheel');
+    gui.add(Game.settings, 'drawSlipGraph');
     gui.add(Game.settings, 'carWidth').min(10).max(100).step(1);
     gui.add(Game.settings, 'carLength').min(10).max(100).step(1);
     gui.add(Game.settings, 'frontWheelsOffset').min(-100).max(100).step(1);
@@ -108,23 +130,32 @@ export default class Game {
     gui.add(Game.settings, 'carEnginePower').min(0).max(100).step(1);
     gui.add(Game.settings, 'carEngineReversePower').min(0).max(100).step(1);
     gui.add(Game.settings, 'carBrakePower').min(0).max(100).step(1);
-    gui.add(Game.settings, 'carSteeringAmount').min(0).max(1).step(0.01);
-    gui.add(Game.settings, 'carSteeringCurve').min(0).max(1).step(0.01);
-    gui.add(Game.settings, 'carSteeringResetAmount').min(0).max(1).step(0.01);
+    gui.add(Game.settings, 'carSteeringAmount').min(0).max(1);
+    gui.add(Game.settings, 'carSteeringCurve').min(0).max(1);
+    gui.add(Game.settings, 'carSteeringResetAmount').min(0).max(1);
     gui.add(Game.settings, 'carMaxSpeed').min(0).max(500).step(1);
     gui.add(Game.settings, 'carSteeringAngleMax').min(0).max(Math.PI).step(0.1);
     gui.add(Game.settings, 'wheelWidth').min(10).max(100).step(1);
     gui.add(Game.settings, 'wheelLength').min(10).max(100).step(1);
-    gui.add(Game.settings, 'tyreLongitudinalDrag').min(0).max(0.1).step(0.0001);
-    gui.add(Game.settings, 'tyreLateralDrag').min(0).max(0.1).step(0.0001);
-    gui.add(Game.settings, 'tyreSpeedOffset').min(0).max(1).step(0.001);
-    gui.add(Game.settings, 'tyreSpeedCoefficient').min(0).max(1).step(0.001);
-    gui.add(Game.settings, 'tyreSlipOffset').min(0).max(1).step(0.001);
-    gui.add(Game.settings, 'tyreSlipCoefficient').min(0).max(1).step(0.001);
+    gui.add(Game.settings, 'tyreLongitudinalDrag').min(0).max(1);
+    gui.add(Game.settings, 'tyreLateralDragMin').min(0).max(1);
+    gui.add(Game.settings, 'tyreLateralDragMax').min(0).max(1);
+    gui.add(Game.settings, 'tyreSpeedOffset')
+      .min(-1).max(1)
+      .onChange(debounce(this.graph.update.bind(this.graph)));
+    gui.add(Game.settings, 'tyreSpeedCoefficient')
+      .min(0).max(5)
+      .onChange(debounce(this.graph.update.bind(this.graph)));
+    gui.add(Game.settings, 'tyreSlipOffset')
+      .min(-1).max(1)
+      .onChange(debounce(this.graph.update.bind(this.graph)));
+    gui.add(Game.settings, 'tyreSlipCoefficient')
+      .min(0).max(5)
+      .onChange(debounce(this.graph.update.bind(this.graph)));
     gui.add(Game.settings, 'frontWheelDrive');
     gui.add(Game.settings, 'rearWheelDrive');
 
-    gui.add(Game.settings, 'temp').min(0).max(1).step(0.01);
+    this.graph.update(0);
   }
 
   private loop(): void {
@@ -151,23 +182,43 @@ export default class Game {
   }
 
   private handleInput(): void {
-    this.car.handleInput();
+    if (Game.settings.testWheel) {
+      this.testWheel.handleInput();
+    } else {
+      this.car.handleInput();
+    }
   }
 
   private update(dt: number): void {
     Game.screen = vec(this.canvas.width, this.canvas.height);
 
-    this.car.update(dt);
+    if (Game.settings.testWheel) {
+      this.testWheel.update(dt);
+      this.camera.position = vec.clone(this.testWheel.position);
+    } else {
+      this.car.update(dt);
+      this.camera.position = vec.clone(this.car.position);
+    }
 
     Input.update();
   }
 
   private draw(): void {
-    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    this.context.setTransform(1, 0, 0, 1, 0, 0);
+    this.context.clearRect(0, 0, Game.screen.x, Game.screen.y);
+    this.context.save();
+    this.camera.draw(this.context);
+    this.background.draw(this.context, this.camera);
+    this.skidCanvas.draw(this.context, this.camera);
 
-    this.car.draw(this.context, this.skidContext);
+    if (Game.settings.testWheel) {
+      this.testWheel.draw(this.context, this.skidCanvas);
+      this.graph.draw(this.context, this.testWheel);
+    } else {
+      this.car.draw(this.context, this.skidCanvas);
+      this.graph.draw(this.context, this.car);
+    }
 
     Debug.draw(this.context);
+    this.context.restore();
   }
 }
