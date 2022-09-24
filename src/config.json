@@ -1,0 +1,11 @@
+{
+  "title": "Tyre physics model",
+  "showFPS": true,
+  "controls": {
+    "throttle": "ArrowUp",
+    "brake": "ArrowDown",
+    "left": "ArrowLeft",
+    "right": "ArrowRight",
+    "handbrake": "Space"
+  }
+}
