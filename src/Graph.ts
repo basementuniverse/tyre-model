@@ -80,7 +80,7 @@ export default class Graph implements Entity {
     context.save();
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.translate(
-      Game.screen.x - this.size.x - this.margin,
+      this.margin,
       Game.screen.y - this.size.y - this.margin
     );
 

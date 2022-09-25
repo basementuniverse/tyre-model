@@ -1,5 +1,13 @@
 # Tyre physics model
 
+![Preview](./preview.png)
+
+Setup:
+
+```bash
+npm install
+```
+
 Build:
 
 ```bash
