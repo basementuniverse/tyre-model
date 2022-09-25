@@ -6,7 +6,7 @@ import Entity from './Entity';
 import HasWheels, { WheelStats } from './HasWheels';
 import Wheel from './Wheel';
 import { vec } from './vec';
-import { clamp, wrapDirection } from './utilities';
+import { clamp, round, wrapDirection } from './utilities';
 import * as config from './config.json';
 
 enum WheelPosition {
@@ -126,32 +126,36 @@ export default class Car implements Entity, HasWheels {
       this.steering * Game.settings.carSteeringAngleMax
     ));
 
+    // Calculate drive amount for each pair of wheels (front and rear)
+    const frontWheelsDrive = (Game.settings.frontWheelDrive
+      ? drive
+      : drive * Game.settings.tyreNoDriveAttenuation) - brake;
+    const rearWheelsDrive = (Game.settings.rearWheelDrive
+      ? drive
+      : drive * Game.settings.tyreNoDriveAttenuation) - brake;
+
     // Update wheels
     this.wheels[WheelPosition.FrontLeft].update(
       dt,
-      Game.settings.frontWheelDrive ? drive : 0,
-      brake,
+      frontWheelsDrive,
       this.handbrake,
       steering
     );
     this.wheels[WheelPosition.FrontRight].update(
       dt,
-      Game.settings.frontWheelDrive ? drive : 0,
-      brake,
+      frontWheelsDrive,
       this.handbrake,
       steering
     );
     this.wheels[WheelPosition.BackLeft].update(
       dt,
-      Game.settings.rearWheelDrive ? drive : 0,
-      brake,
+      rearWheelsDrive,
       this.handbrake,
       this.direction
     );
     this.wheels[WheelPosition.BackRight].update(
       dt,
-      Game.settings.rearWheelDrive ? drive : 0,
-      brake,
+      rearWheelsDrive,
       this.handbrake,
       this.direction
     );
@@ -178,10 +182,10 @@ export default class Car implements Entity, HasWheels {
     this.direction = direction;
 
     // Debug output
-    Debug.value('position', vec.str(this.position));
-    Debug.value('direction', this.direction);
-    Debug.value('speed', this.speed);
-    Debug.value('steering', this.steering);
+    Debug.value('position', vec.str(vec.map(this.position, n => round(n, 2))));
+    Debug.value('direction', round(this.direction, 2));
+    Debug.value('speed', round(this.speed, 2));
+    Debug.value('steering', round(this.steering, 2));
     Debug.value(
       'throttle',
       'throttle',

@@ -35,6 +35,8 @@ export default class Game {
   public static settings: Record<string, any> = {
     reset: () => { },
     testWheel: false,
+    useSlipCurve: true,
+    slipCurveControlPoints: [0, 0.0, 0.1, 0.3, 0.5, 0.6, 0.7, 0.8, 0.85, 0.95, 1],
     drawSlipGraph: true,
     carWidth: 30,
     carLength: 50,
@@ -58,8 +60,7 @@ export default class Game {
     tyreSpeedCoefficient: 1.6,
     tyreSlipOffset: 0.76,
     tyreSlipCoefficient: 0.8,
-    useSlipCurve: true,
-    slipCurveControlPoints: [0, 0.0, 0.1, 0.3, 0.5, 0.6, 0.7, 0.8, 0.85, 0.95, 1],
+    tyreNoDriveAttenuation: 0.62,
     frontWheelDrive: true,
     rearWheelDrive: true,
   };
@@ -121,6 +122,8 @@ export default class Game {
     const gui = new dat.GUI({ width: 350 });
     gui.add(Game.settings, 'reset');
     gui.add(Game.settings, 'testWheel');
+    gui.add(Game.settings, 'useSlipCurve')
+      .onChange(debounce(this.graph.update.bind(this.graph)));
     gui.add(Game.settings, 'drawSlipGraph');
     gui.add(Game.settings, 'carWidth').min(10).max(100).step(1);
     gui.add(Game.settings, 'carLength').min(10).max(100).step(1);
@@ -128,15 +131,15 @@ export default class Game {
     gui.add(Game.settings, 'backWheelsOffset').min(-100).max(100).step(1);
     gui.add(Game.settings, 'rightWheelsOffset').min(-100).max(100).step(1);
     gui.add(Game.settings, 'leftWheelsOffset').min(-100).max(100).step(1);
-    gui.add(Game.settings, 'carEnginePower').min(0).max(100).step(1);
-    gui.add(Game.settings, 'carBrakePower').min(0).max(100).step(1);
+    gui.add(Game.settings, 'wheelWidth').min(10).max(100).step(1);
+    gui.add(Game.settings, 'wheelLength').min(10).max(100).step(1);
+    gui.add(Game.settings, 'carEnginePower').min(0).max(200).step(1);
+    gui.add(Game.settings, 'carBrakePower').min(0).max(200).step(1);
     gui.add(Game.settings, 'carSteeringAmount').min(0).max(1);
     gui.add(Game.settings, 'carSteeringCurve').min(0).max(1);
     gui.add(Game.settings, 'carSteeringResetAmount').min(0).max(1);
     gui.add(Game.settings, 'carMaxSpeed').min(0).max(500).step(1);
-    gui.add(Game.settings, 'carSteeringAngleMax').min(0).max(Math.PI).step(0.1);
-    gui.add(Game.settings, 'wheelWidth').min(10).max(100).step(1);
-    gui.add(Game.settings, 'wheelLength').min(10).max(100).step(1);
+    gui.add(Game.settings, 'carSteeringAngleMax').min(0).max(Math.PI);
     gui.add(Game.settings, 'tyreLongitudinalDrag').min(0).max(1);
     gui.add(Game.settings, 'tyreLateralDragMin').min(0).max(1);
     gui.add(Game.settings, 'tyreLateralDragMax').min(0).max(1);
@@ -152,8 +155,7 @@ export default class Game {
     gui.add(Game.settings, 'tyreSlipCoefficient')
       .min(0).max(5)
       .onChange(debounce(this.graph.update.bind(this.graph)));
-    gui.add(Game.settings, 'useSlipCurve')
-      .onChange(debounce(this.graph.update.bind(this.graph)));
+    gui.add(Game.settings, 'tyreNoDriveAttenuation').min(0).max(1);
     gui.add(Game.settings, 'frontWheelDrive');
     gui.add(Game.settings, 'rearWheelDrive');
 

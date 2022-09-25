@@ -1,3 +1,8 @@
+export function round(n: number, d: number = 0): number {
+  const p = Math.pow(10, d);
+  return Math.round(n * p + Number.EPSILON) / p;
+}
+
 export function clamp(a: number, min: number = 0, max: number = 1): number {
   return a < min ? min : (a > max ? max : a);
 }

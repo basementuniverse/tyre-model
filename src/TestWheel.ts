@@ -57,7 +57,7 @@ export default class TestWheel implements Entity, HasWheels {
     const drive = this.throttle ? Game.settings.carEnginePower : 0;
     const brake = this.brake ? Game.settings.carBrakePower : 0;
 
-    this.wheel.update(dt, drive, brake, this.handbrake, this.direction);
+    this.wheel.update(dt, drive - brake, this.handbrake, this.direction);
   }
 
   public draw(context: CanvasRenderingContext2D, skidCanvas: SkidCanvas): void {

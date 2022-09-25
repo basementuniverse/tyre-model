@@ -22,7 +22,48 @@ export default class SkidCanvas implements Entity {
     size: vec,
     alpha: number
   ): void {
-    // Get the chunk for the specified position
+    // Get chunks that overlap this position and size
+    const chunks = this.getOverlappingChunks(position, size);
+
+    // Draw a skid mark on each chunk
+    for (const chunk of chunks) {
+      this.drawSkidMark(
+        chunk.context,
+        vec.sub(position, vec.mul(chunk.position, this.chunkSize)),
+        direction,
+        size,
+        alpha
+      );
+    }
+  }
+
+  private getOverlappingChunks(
+    position: vec,
+    size: vec
+  ): (Chunk & { position: vec })[] {
+    // Get corner bounds for the position and size
+    const maxDimension = Math.max(size.x, size.y);
+    const corners = [
+      vec.add(position, vec(-maxDimension)), // top left
+      vec.add(position, vec(maxDimension, -maxDimension)), // top right
+      vec.add(position, vec(-maxDimension, maxDimension)), // bottom left
+      vec.add(position, vec(maxDimension)), // bottom right
+    ]
+      .map(corner => ({
+        position: corner,
+        hash: this.hashPosition(this.chunkPosition(corner)),
+      }))
+      .filter(
+        (corner, index, array) =>
+          index === array.findIndex(current => current.hash === corner.hash)
+      )
+      .map(corner => corner.position);
+
+    // Get chunks for each unique corner
+    return corners.map(corner => this.fetchChunk(corner));
+  }
+
+  private fetchChunk(position: vec): Chunk & { position: vec } {
     let chunk: Chunk;
     const chunkPosition = this.chunkPosition(position);
     const hash = this.hashPosition(chunkPosition);
@@ -40,15 +81,7 @@ export default class SkidCanvas implements Entity {
       }
       this.chunks[hash] = chunk = { canvas, context };
     }
-
-    // Draw a skid mark on the chunk
-    this.drawSkidMark(
-      chunk.context,
-      vec.sub(position, vec.mul(chunkPosition, this.chunkSize)),
-      direction,
-      size,
-      alpha
-    );
+    return { ...chunk, position: chunkPosition };
   }
 
   private chunkPosition(position: vec): vec {
@@ -72,10 +105,10 @@ export default class SkidCanvas implements Entity {
     context.globalAlpha = alpha * this.skidBaseAlpha;
     context.fillStyle = this.skidColour;
     context.fillRect(
-      -size.x - size.y / 2,
-      -size.y / 2,
-      size.x + size.y / 2,
-      size.y / 2
+      -size.x / 2,
+      -size.y,
+      size.x / 2,
+      size.y
     );
     context.restore();
   }

@@ -41,14 +41,13 @@ export default class Wheel implements Entity {
   public update(
     dt: number,
     drive: number,
-    brake: number,
     handbrake: boolean,
     direction: number
   ): void {
     this.direction = direction;
 
     // Calculate delta-v (this is where the wheel *wants* to go)
-    const dv = vec.rot(vec((drive - brake) * dt, 0), this.direction);
+    const dv = vec.rot(vec(drive * dt, 0), this.direction);
 
     // Calculate the speed coefficient (the magnitude of the tyre's velocity
     // normalised to the max speed of the car)
@@ -64,10 +63,10 @@ export default class Wheel implements Entity {
     if (vec.eq(this.velocity, vec())) {
       this.slipCoefficient = 0;
     } else {
-      this.slipCoefficient = clamp(1 - vec.dot(
+      this.slipCoefficient = clamp(1 - Math.abs(vec.dot(
         vec.rot(vec.ux(), this.direction),
         vec.nor(this.velocity)
-      ));
+      )));
     }
     const slipComponent = clamp(linearTransform(
       this.slipCoefficient,
