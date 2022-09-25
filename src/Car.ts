@@ -23,7 +23,6 @@ export default class Car implements Entity, HasWheels {
 
   public throttle: boolean = false;
   public brake: boolean = false;
-  public reverse: boolean = false;
   public handbrake: boolean = false;
   public steering: number = 0;
 
@@ -92,13 +91,10 @@ export default class Car implements Entity, HasWheels {
   }
 
   public handleInput(): void {
-    // TODO improve brake/reverse handling
-    
-    this.handbrake = Input.keyDown(config.controls.handbrake as any);
-
-    // Throttle / brake / reverse
+    // Throttle / brake / handbrake
     this.throttle = Input.keyDown(config.controls.throttle as any);
     this.brake = Input.keyDown(config.controls.brake as any);
+    this.handbrake = Input.keyDown(config.controls.handbrake as any);
 
     // Steering
     const steeringAmount = Game.settings.carSteeringAmount + (
@@ -202,14 +198,14 @@ export default class Car implements Entity, HasWheels {
         foregroundColour: this.brake ? 'white' : 'rgba(255, 255, 255, 0.2)',
       }
     );
-    Debug.value(
-      'reverse',
-      'reverse',
-      {
-        showLabel: false,
-        foregroundColour: this.reverse ? 'white' : 'rgba(255, 255, 255, 0.2)',
-      }
-    );
+    // Debug.value(
+    //   'reverse',
+    //   'reverse',
+    //   {
+    //     showLabel: false,
+    //     foregroundColour: this.reverse ? 'white' : 'rgba(255, 255, 255, 0.2)',
+    //   }
+    // );
     Debug.value(
       'handbrake',
       'handbrake',

@@ -5,6 +5,7 @@ import {
   clamp,
   lerpArray,
   linearTransform,
+  smoothPartial,
   smoothstep,
 } from './utilities';
 import { vec } from './vec';
@@ -18,6 +19,9 @@ export default class Graph implements Entity {
     [255, 255, 0],
     [255, 0, 0],
   ];
+  private readonly labelFont: 'bold 14px sans-serif';
+  private readonly labelColour: string = 'white';
+  private readonly slipCurveColour: string = 'black';
 
   private canvas: HTMLCanvasElement;
   private context: CanvasRenderingContext2D;
@@ -36,6 +40,8 @@ export default class Graph implements Entity {
 
   public update(dt: number): void {
     this.context.save();
+
+    // Slip transforms
     for (let x = 0; x <= this.size.x; x++) {
       for (let y = 0; y <= this.size.y; y++) {
         const slip = clamp(linearTransform(
@@ -58,6 +64,15 @@ export default class Graph implements Entity {
         this.context.fillRect(x, this.size.y - y, 1, 1);
       }
     }
+
+    // Slip curve
+    if (Game.settings.useSlipCurve) {
+      this.context.fillStyle = this.slipCurveColour;
+      for (let x = 0; x <= this.size.x; x++) {
+        const y = smoothPartial(x / this.size.x, Game.settings.slipCurveControlPoints);
+        this.context.fillRect(x, this.size.y - (y * this.size.y), 2, 2);
+      }
+    }
     this.context.restore();
   }
 
@@ -68,10 +83,33 @@ export default class Graph implements Entity {
       Game.screen.x - this.size.x - this.margin,
       Game.screen.y - this.size.y - this.margin
     );
+
+    // Draw slip map
     context.drawImage(
       this.canvas,
       0, 0
     );
+
+    // Draw labels
+    context.font = this.labelFont;
+    context.fillStyle = this.labelColour;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.fillText(
+      'slip',
+      this.size.x / 2,
+      this.size.y + this.margin / 2
+    );
+    context.save();
+    context.rotate(-Math.PI / 2);
+    context.fillText(
+      'speed',
+      -this.size.x / 2,
+      -this.margin / 2
+    );
+    context.restore();
+
+    // Draw wheel stats
     const wheelStats = car.getWheelStats();
     for (const wheel of wheelStats) {
       this.drawCross(

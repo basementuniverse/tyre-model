@@ -6,6 +6,7 @@ import { vec } from './vec';
 import {
   clamp,
   linearTransform,
+  smoothPartial,
   smoothstep,
 } from './utilities';
 
@@ -75,10 +76,16 @@ export default class Wheel implements Entity {
     ));
 
     // Calculate lateral drag (the amount of drag at a normal to the tyre's direction)
+    const i = Game.settings.useSlipCurve
+      ? smoothPartial(
+        1 - clamp(slipComponent * speedComponent),
+        Game.settings.slipCurveControlPoints
+      )
+      : 1 - clamp(slipComponent * speedComponent);
     const lateralDrag = smoothstep(
       Game.settings.tyreLateralDragMin,
       Game.settings.tyreLateralDragMax,
-      1 - clamp(slipComponent * speedComponent)
+      i
     );
 
     // Calculate longitudinal drag (the amount of draw in the direction of the tyre)
@@ -86,8 +93,6 @@ export default class Wheel implements Entity {
     // rolling friction etc.
     // When the handbrake is applied, this should be the same as lateral drag
     const longitudinalDrag = handbrake ? lateralDrag : Game.settings.tyreLongitudinalDrag;
-
-    // TODO maybe pass lateral drag through a function that simulates coefficient of friction?
 
     // Calculate a velocity vector pointing in the tyre's direction so we can apply
     // longitudinal and lateral drag

@@ -13,7 +13,6 @@ export default class TestWheel implements Entity, HasWheels {
 
   public throttle: boolean = false;
   public brake: boolean = false;
-  public reverse: boolean = false;
   public handbrake: boolean = false;
 
   private wheel: Wheel;

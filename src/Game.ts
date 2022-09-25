@@ -43,7 +43,6 @@ export default class Game {
     rightWheelsOffset: 14,
     leftWheelsOffset: -14,
     carEnginePower: 80,
-    carEngineReversePower: 30,
     carBrakePower: 50,
     carSteeringAmount: 0.02,
     carSteeringCurve: 0.06,
@@ -59,6 +58,8 @@ export default class Game {
     tyreSpeedCoefficient: 1.6,
     tyreSlipOffset: 0.76,
     tyreSlipCoefficient: 0.8,
+    useSlipCurve: true,
+    slipCurveControlPoints: [0, 0.0, 0.1, 0.3, 0.5, 0.6, 0.7, 0.8, 0.85, 0.95, 1],
     frontWheelDrive: true,
     rearWheelDrive: true,
   };
@@ -128,7 +129,6 @@ export default class Game {
     gui.add(Game.settings, 'rightWheelsOffset').min(-100).max(100).step(1);
     gui.add(Game.settings, 'leftWheelsOffset').min(-100).max(100).step(1);
     gui.add(Game.settings, 'carEnginePower').min(0).max(100).step(1);
-    gui.add(Game.settings, 'carEngineReversePower').min(0).max(100).step(1);
     gui.add(Game.settings, 'carBrakePower').min(0).max(100).step(1);
     gui.add(Game.settings, 'carSteeringAmount').min(0).max(1);
     gui.add(Game.settings, 'carSteeringCurve').min(0).max(1);
@@ -151,6 +151,8 @@ export default class Game {
       .onChange(debounce(this.graph.update.bind(this.graph)));
     gui.add(Game.settings, 'tyreSlipCoefficient')
       .min(0).max(5)
+      .onChange(debounce(this.graph.update.bind(this.graph)));
+    gui.add(Game.settings, 'useSlipCurve')
       .onChange(debounce(this.graph.update.bind(this.graph)));
     gui.add(Game.settings, 'frontWheelDrive');
     gui.add(Game.settings, 'rearWheelDrive');

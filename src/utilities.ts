@@ -21,6 +21,10 @@ export function linearTransform(x: number, m: number, c: number): number {
   return x * m + c;
 }
 
+export function smoothPartial(x: number, p: number[]): number {
+  return lerpArray(p, x, smoothstep);
+}
+
 export function frac(a: number): number {
   return a >= 0 ? a - Math.floor(a) : a - Math.ceil(a);
 }
